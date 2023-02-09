@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>BtcChart static</title>
+    <style>
+      .btc-chart {
+        width: 100%;
+        height: 100%;
+      }
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="btc-chart" id="chart"></div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+      var chart_json = "";
+      Plotly.plot("chart", JSON.parse(chart_json));
+    </script>
+  </body>
+</html>

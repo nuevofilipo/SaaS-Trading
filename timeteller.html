@@ -1,0 +1,12 @@
+<div id="current-time"></div>
+<script>
+  setInterval(fetchTime, 1000);
+
+  function fetchTime() {
+    fetch("/time")
+      .then((response) => response.json())
+      .then((data) => {
+        document.querySelector("#time").innerHTML = data.time;
+      });
+  }
+</script>
