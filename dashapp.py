@@ -46,17 +46,6 @@ moving_average = go.Scatter(x=df.index, y=df["MA"], mode="lines", name="Moving A
 
 fig.add_trace(moving_average)
 
-
-# fig.update_layout(
-#     title="Bitcoin Price (USD)",
-#     xaxis_title="Date",
-#     yaxis_title="Price",
-#     height=500,
-#     width=1000,
-#     plot_bgcolor="#FFF",
-#     xaxis=dict(title="time", linecolor="#BCCCDC", showgrid=False),
-# )
-
 app.layout = html.Div(
     [
         dcc.Graph(
@@ -141,9 +130,6 @@ def update_chart(n):
         ),
         margin=dict(l=100, r=100, t=100, b=100),
     )
-
-    # fig.update_config(config=dict({"scrollZoom": True}))
-    # fig.config["scrollZoom"] = True
 
     fig["layout"]["uirevision"] = "something"
     return fig
