@@ -1,0 +1,17 @@
+.my-button {
+    background-color: black;
+    color: white;
+    /* border-color: black; */
+    height: 50px;
+    width: 200px;
+    border-radius: 10px;
+    font-size: 20px;
+    border: none;
+    font-family: "Century Gothic", sans-serif;
+}
+
+
+.my-button:hover{
+    background-color: palegoldenrod;
+    color: black;
+}

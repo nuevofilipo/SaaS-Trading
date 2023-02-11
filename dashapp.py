@@ -57,6 +57,11 @@ app.layout = html.Div(
         dcc.Interval(
             id="interval-component", interval=10000, n_intervals=0  # in milliseconds
         ),
+        html.Button(
+            "Click Me Feb 2023",
+            id="my-button",
+            className="my-button",
+        ),
     ]
 )
 
