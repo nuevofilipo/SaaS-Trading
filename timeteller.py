@@ -1,21 +1,35 @@
-import dash
-from dash import html
-import datetime as dt
-from dash import dcc
+import plotly.graph_objs as go
 
-app = dash.Dash()
+# Sample data
+x = [1, 2, 3, 4, 5]
+y = [10, 100, 1000, 10000, 100000]
 
-app.layout = html.Div(
-    [
-        html.Div("Example Div", style={"color": "blue", "fontSize": 14}),
-        html.P("Example P", className="my-class", id="my-p-element"),
-        html.Button(
-            "Example Button",
-            id="my-button",
-            className="my-button",
+# Create a scatter plot
+fig = go.Figure(data=go.Scatter(x=x, y=y))
+
+# Add a button to change the colorway
+fig.update_layout(
+    updatemenus=[
+        dict(
+            type="buttons",
+            direction="left",
+            buttons=list(
+                [
+                    dict(
+                        args=["plot_bgcolor", "#4287f5"],
+                        label="dark",
+                        method="relayout",
+                    ),
+                    dict(
+                        args=["plot_bgcolor", "#ffffff"],
+                        label="light",
+                        method="relayout",
+                    ),
+                ]
+            ),
         ),
-    ],
+    ]
 )
 
-if __name__ == "__main__":
-    app.run_server(debug=True)
+# Show the chart
+fig.show()

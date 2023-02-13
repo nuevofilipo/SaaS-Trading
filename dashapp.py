@@ -13,17 +13,17 @@ import talib as ta
 
 app = dash.Dash()
 
-start_date = "2023-01-28"
+start_date = "2017-01-01"
 end_date = "2023-01-01"
 end_date1 = dt.datetime.now()
 
 btc = yf.Ticker("BTC-USD")
-hourly_data = btc.history(interval="1h", start=start_date, end=end_date1)
+hourly_data = btc.history(interval="1wk", start=start_date, end=end_date1)
 
 df = pd.DataFrame(hourly_data)
 # uf = df[["Close"]]
 
-df["MA"] = ta.SMA(df["Close"], timeperiod=7)
+df["MA"] = ta.SMA(df["Close"], timeperiod=9)
 
 
 # print(uf)
@@ -37,8 +37,14 @@ fig = go.Figure(
             high=hourly_data["High"],
             low=hourly_data["Low"],
             close=hourly_data["Close"],
+            increasing_line_color="#ffffff",
+            decreasing_line_color="#ffffff",
         )
     ]
+)
+
+fig.update_layout(
+    plot_bgcolor="#000000",
 )
 
 moving_average = go.Scatter(x=df.index, y=df["MA"], mode="lines", name="Moving Average")
@@ -71,9 +77,10 @@ app.layout = html.Div(
 )
 def update_chart(n):
     end_date1 = dt.datetime.now()
-    hourly_data = btc.history(interval="1h", start=start_date, end=end_date1)
+    hourly_data = btc.history(interval="1wk", start=start_date, end=end_date1)
     df = pd.DataFrame(hourly_data)
-    df["MA"] = ta.SMA(df["Close"], timeperiod=7)
+    df["MA"] = ta.SMA(df["Close"], timeperiod=9)
+    df["EMA"] = ta.EMA(df["Close"], timeperiod=12)
 
     fig = go.Figure(
         data=[
@@ -84,19 +91,49 @@ def update_chart(n):
                 low=hourly_data["Low"],
                 close=hourly_data["Close"],
                 name="Bitcoin Price (USD)",
+                increasing_line_color="#03fc94",
+                decreasing_line_color="#fc032d",
             )
         ],
     )
 
     moving_average = go.Scatter(
         x=df.index,
-        y=df["MA"],
+        y=df["MA"] * 1.62,
         mode="lines",
         name="Moving Average",
-        line=dict(color="#BCCCDC"),
+        line=dict(color="#2780d9", width=1),
+    )
+
+    moving_average2 = go.Scatter(
+        x=df.index,
+        y=df["MA"] * 0.62,
+        mode="lines",
+        name="Moving Average",
+        line=dict(color="#2780d9", width=1),
+    )
+
+    ema1 = go.Scatter(
+        x=df.index,
+        y=df["EMA"] * 1.21,
+        mode="lines",
+        name="EMA",
+        line=dict(color="#ffb22e", width=1),
+    )
+
+    ema2 = go.Scatter(
+        x=df.index,
+        y=df["EMA"] * 0.79,
+        mode="lines",
+        name="EMA",
+        line=dict(color="#ffb22e", width=1),
     )
 
     fig.add_trace(moving_average)
+    fig.add_trace(moving_average2)
+
+    fig.add_trace(ema1)
+    fig.add_trace(ema2)
 
     fig.update_layout(
         title="Bitcoin Price (USD)",
@@ -104,7 +141,7 @@ def update_chart(n):
         font=dict(family="Century Gothic", size=15, color="#ffffff"),
         # height=900,
         # width=1800,
-        plot_bgcolor="#000000",
+        # plot_bgcolor="#000000",
         paper_bgcolor="#000000",
         font_color="#FFFFFF",
         spikedistance=1000,
@@ -123,17 +160,42 @@ def update_chart(n):
             spikecolor="#999999",
             spikemode="across",
             showgrid=False,
-            range=[df.index[-200], df.index[-1]],
+            range=[df.index[-120], df.index[-1]],
             # fixedrange=True,
             rangeslider=dict(visible=False),
+            # type="log",
         ),
         yaxis=dict(
             tickfont=dict(size=14, color="#bdbdbd"),
             linecolor="#bdbdbd",
             showgrid=False,
             fixedrange=False,
+            type="log",
         ),
         margin=dict(l=100, r=100, t=100, b=100),
+    )
+
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="left",
+                buttons=list(
+                    [
+                        dict(
+                            args=["plot_bgcolor", "#4287f5"],
+                            label="dark",
+                            method="relayout",
+                        ),
+                        dict(
+                            args=["plot_bgcolor", "#ffffff"],
+                            label="light",
+                            method="relayout",
+                        ),
+                    ]
+                ),
+            ),
+        ]
     )
 
     fig["layout"]["uirevision"] = "something"
