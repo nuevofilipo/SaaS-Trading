@@ -1,4 +1,4 @@
-.my-button {
+.toggle-button {
     background-color: black;
     color: white;
     /* border-color: black; */
@@ -11,7 +11,7 @@
 }
 
 
-.my-button:hover{
+.toggle-button:hover{
     background-color: palegoldenrod;
     color: black;
 }

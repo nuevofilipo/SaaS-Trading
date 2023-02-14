@@ -54,6 +54,7 @@ fig.add_trace(moving_average)
 
 app.layout = html.Div(
     [
+        html.Button("Toggle Dark Mode", className="toggle-button", id="dark-mode-btn"),
         dcc.Graph(
             id="candlestick-chart",
             figure=fig,
@@ -63,19 +64,16 @@ app.layout = html.Div(
         dcc.Interval(
             id="interval-component", interval=10000, n_intervals=0  # in milliseconds
         ),
-        html.Button(
-            "Click Me Feb 2023",
-            id="my-button",
-            className="my-button",
-        ),
     ]
 )
 
 
 @app.callback(
-    Output("candlestick-chart", "figure"), [Input("interval-component", "n_intervals")]
+    Output("candlestick-chart", "figure"),
+    [Input("interval-component", "n_intervals")],
+    [dash.dependencies.Input("dark-mode-btn", "n_clicks")],
 )
-def update_chart(n):
+def update_chart(n, n_clicks):
     end_date1 = dt.datetime.now()
     hourly_data = btc.history(interval="1wk", start=start_date, end=end_date1)
     df = pd.DataFrame(hourly_data)
@@ -175,28 +173,18 @@ def update_chart(n):
         margin=dict(l=100, r=100, t=100, b=100),
     )
 
-    fig.update_layout(
-        updatemenus=[
-            dict(
-                type="buttons",
-                direction="left",
-                buttons=list(
-                    [
-                        dict(
-                            args=["plot_bgcolor", "#4287f5"],
-                            label="dark",
-                            method="relayout",
-                        ),
-                        dict(
-                            args=["plot_bgcolor", "#ffffff"],
-                            label="light",
-                            method="relayout",
-                        ),
-                    ]
-                ),
-            ),
-        ]
-    )
+    if n_clicks is not None and n_clicks % 2 == 1:
+        fig.update_layout(
+            plot_bgcolor="#000000",
+            paper_bgcolor="#000000",
+            title_font_color="#FFFFFF",
+        )
+    else:
+        fig.update_layout(
+            plot_bgcolor="#ffffff",
+            paper_bgcolor="#ffffff",
+            title_font_color="#000000",
+        )
 
     fig["layout"]["uirevision"] = "something"
     return fig

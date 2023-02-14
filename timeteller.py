@@ -1,35 +1,47 @@
+import dash
+from dash import dcc
+from dash import html
 import plotly.graph_objs as go
+import plotly.io as pio
 
-# Sample data
-x = [1, 2, 3, 4, 5]
-y = [10, 100, 1000, 10000, 100000]
+app = dash.Dash(__name__)
 
-# Create a scatter plot
-fig = go.Figure(data=go.Scatter(x=x, y=y))
+# Create the figure with a light mode template
+fig = go.Figure(
+    data=go.Scatter(x=[1, 2, 3], y=[4, 5, 6]), layout=go.Layout(template="plotly_white")
+)
 
-# Add a button to change the colorway
-fig.update_layout(
-    updatemenus=[
-        dict(
-            type="buttons",
-            direction="left",
-            buttons=list(
-                [
-                    dict(
-                        args=["plot_bgcolor", "#4287f5"],
-                        label="dark",
-                        method="relayout",
-                    ),
-                    dict(
-                        args=["plot_bgcolor", "#ffffff"],
-                        label="light",
-                        method="relayout",
-                    ),
-                ]
-            ),
-        ),
+app.layout = html.Div(
+    [
+        dcc.Graph(id="graph", figure=fig),
+        html.Button("Toggle Dark Mode", id="dark-mode-btn"),
     ]
 )
 
-# Show the chart
-fig.show()
+
+@app.callback(
+    dash.dependencies.Output("graph", "figure"),
+    [dash.dependencies.Input("dark-mode-btn", "n_clicks")],
+    [dash.dependencies.State("graph", "figure")],
+)
+def toggle_dark_mode(n_clicks, fig):
+    if n_clicks is not None and n_clicks % 2 == 1:
+        # Update the template to a dark mode template
+        fig = go.Figure(
+            data=go.Scatter(x=[1, 2, 3], y=[4, 5, 6]),
+            layout=go.Layout(template="plotly_white"),
+        )
+        fig.update_layout(template="plotly_dark")
+    else:
+        # Use the light mode template
+        fig = go.Figure(
+            data=go.Scatter(x=[1, 2, 3], y=[4, 5, 6]),
+            layout=go.Layout(template="plotly_white"),
+        )
+        fig.update_layout(template="plotly_white")
+
+    return fig
+
+
+if __name__ == "__main__":
+    app.run_server(debug=True)
