@@ -11,6 +11,11 @@ from dash.dependencies import Input, Output
 from dash import dcc
 import talib as ta
 
+from scipy.signal import savgol_filter
+from scipy.signal import find_peaks
+import pandas_ta as tan
+
+
 app = dash.Dash()
 
 start_date = "2017-01-01"
@@ -80,6 +85,10 @@ def update_chart(n, n_clicks):
     df["MA"] = ta.SMA(df["Close"], timeperiod=9)
     df["EMA"] = ta.EMA(df["Close"], timeperiod=12)
 
+    df["atr"] = tan.atr(df["High"], df["Low"], df["Close"], length=1)
+    df["atr"] = df.atr.rolling(window=30).mean()
+    df["close_smooth"] = savgol_filter(df["Close"], 49, 5)
+
     fig = go.Figure(
         data=[
             go.Candlestick(
@@ -94,6 +103,37 @@ def update_chart(n, n_clicks):
             )
         ],
     )
+
+    smoothing = go.Scatter(
+        x=df.index, y=df["close_smooth"], mode="lines", name="Smoothed"
+    )
+    # fig.add_trace(smoothing)
+
+    atr = df["atr"].iloc[-1]
+
+    peaks_idx, _ = find_peaks(df["close_smooth"], distance=15, width=3, prominence=atr)
+    troughs_idx, _ = find_peaks(
+        -df["close_smooth"], distance=15, width=3, prominence=atr
+    )
+
+    peaks = go.Scatter(
+        x=df.index[peaks_idx],
+        y=df["close_smooth"][peaks_idx],
+        mode="markers",
+        name="Peaks",
+        marker=dict(color="blue", size=12),
+    )
+
+    troughs = go.Scatter(
+        x=df.index[troughs_idx],
+        y=df["close_smooth"][troughs_idx],
+        mode="markers",
+        name="Troughs",
+        marker=dict(color="yellow", size=12),
+    )
+
+    fig.add_trace(peaks)
+    fig.add_trace(troughs)
 
     moving_average = go.Scatter(
         x=df.index,
@@ -184,6 +224,9 @@ def update_chart(n, n_clicks):
             plot_bgcolor="#ffffff",
             paper_bgcolor="#ffffff",
             title_font_color="#000000",
+            yaxis=dict(
+                # type="linear",
+            ),
         )
 
     fig["layout"]["uirevision"] = "something"
