@@ -16,19 +16,13 @@ from scipy.signal import find_peaks
 import pandas_ta as tan
 
 
-app = dash.Dash()
+app = dash.Dash()  # creating the dash app
 
-start_date = "2017-01-01"
-end_date = "2023-01-01"
-end_date1 = dt.datetime.now()
+start_date = "2021-01-01"
+end_date = dt.datetime.now()
 
 btc = yf.Ticker("BTC-USD")
-hourly_data = btc.history(interval="1wk", start=start_date, end=end_date1)
-
-df = pd.DataFrame(hourly_data)
-# uf = df[["Close"]]
-
-df["MA"] = ta.SMA(df["Close"], timeperiod=9)
+data = btc.history(interval="1d", start=start_date, end=end_date)
 
 
 # print(uf)
@@ -37,29 +31,21 @@ df["MA"] = ta.SMA(df["Close"], timeperiod=9)
 fig = go.Figure(
     data=[
         go.Candlestick(
-            x=hourly_data.index,
-            open=hourly_data["Open"],
-            high=hourly_data["High"],
-            low=hourly_data["Low"],
-            close=hourly_data["Close"],
-            increasing_line_color="#ffffff",
-            decreasing_line_color="#ffffff",
+            x=data.index,
+            open=data["Open"],
+            high=data["High"],
+            low=data["Low"],
+            close=data["Close"],
         )
     ]
 )
+# ctrl f2 for renaming all variables at once
 
-fig.update_layout(
-    plot_bgcolor="#000000",
-)
-
-moving_average = go.Scatter(x=df.index, y=df["MA"], mode="lines", name="Moving Average")
-
-
-fig.add_trace(moving_average)
 
 app.layout = html.Div(
     [
         html.Button("Toggle Dark Mode", className="toggle-button", id="dark-mode-btn"),
+        html.Button("daily/weekly", className="toggle-button", id="daily-weekly-btn"),
         dcc.Graph(
             id="candlestick-chart",
             figure=fig,
@@ -77,26 +63,37 @@ app.layout = html.Div(
     Output("candlestick-chart", "figure"),
     [Input("interval-component", "n_intervals")],
     [dash.dependencies.Input("dark-mode-btn", "n_clicks")],
+    [dash.dependencies.Input("daily-weekly-btn", "n_clicks")],
 )
-def update_chart(n, n_clicks):
-    end_date1 = dt.datetime.now()
-    hourly_data = btc.history(interval="1wk", start=start_date, end=end_date1)
-    df = pd.DataFrame(hourly_data)
-    df["MA"] = ta.SMA(df["Close"], timeperiod=9)
-    df["EMA"] = ta.EMA(df["Close"], timeperiod=12)
+def update_chart(n, n_clicks_1, n_clicks_2):
+    end_date = dt.datetime.now()
+    btc = yf.Ticker("BTC-USD")
+
+    if n_clicks_2 is not None and n_clicks_2 % 2 == 1:
+        data_daily = btc.history(interval="1d", start=start_date, end=end_date)
+        data = data_daily
+        df = pd.DataFrame(data)
+        df["MA"] = ta.SMA(df["Close"], timeperiod=63)
+        df["EMA"] = ta.EMA(df["Close"], timeperiod=84)
+    else:
+        data_weekly = btc.history(interval="1wk", start=start_date, end=end_date)
+        data = data_weekly
+        df = pd.DataFrame(data)
+        df["MA"] = ta.SMA(df["Close"], timeperiod=9)
+        df["EMA"] = ta.EMA(df["Close"], timeperiod=12)
 
     df["atr"] = tan.atr(df["High"], df["Low"], df["Close"], length=1)
     df["atr"] = df.atr.rolling(window=30).mean()
-    df["close_smooth"] = savgol_filter(df["Close"], 49, 5)
+    df["close_smooth"] = savgol_filter(df["Close"], 15, 5)
 
     fig = go.Figure(
         data=[
             go.Candlestick(
-                x=hourly_data.index,
-                open=hourly_data["Open"],
-                high=hourly_data["High"],
-                low=hourly_data["Low"],
-                close=hourly_data["Close"],
+                x=data.index,
+                open=data["Open"],
+                high=data["High"],
+                low=data["Low"],
+                close=data["Close"],
                 name="Bitcoin Price (USD)",
                 increasing_line_color="#03fc94",
                 decreasing_line_color="#fc032d",
@@ -173,6 +170,10 @@ def update_chart(n, n_clicks):
     fig.add_trace(ema1)
     fig.add_trace(ema2)
 
+    date_range = df.loc[df.index[-50] : df.index[-1]]
+    max_value = date_range["High"].max()
+    min_value = date_range["Low"].min()
+
     fig.update_layout(
         title="Bitcoin Price (USD)",
         title_font=dict(family="Century Gothic", size=18, color="#ffffff"),
@@ -198,7 +199,7 @@ def update_chart(n, n_clicks):
             spikecolor="#999999",
             spikemode="across",
             showgrid=False,
-            range=[df.index[-120], df.index[-1]],
+            range=[df.index[-50], df.index[-1]],
             # fixedrange=True,
             rangeslider=dict(visible=False),
             # type="log",
@@ -208,12 +209,13 @@ def update_chart(n, n_clicks):
             linecolor="#bdbdbd",
             showgrid=False,
             fixedrange=False,
-            type="log",
+            range=[min_value * 0.9, max_value * 1.1],
+            # type="log",
         ),
         margin=dict(l=100, r=100, t=100, b=100),
     )
 
-    if n_clicks is not None and n_clicks % 2 == 1:
+    if n_clicks_1 is not None and n_clicks_1 % 2 == 1:
         fig.update_layout(
             plot_bgcolor="#000000",
             paper_bgcolor="#000000",

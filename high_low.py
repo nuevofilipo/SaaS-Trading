@@ -9,11 +9,11 @@ from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
 
 
-start_date = "2023-01-01"
+start_date = "2021-01-01"
 end_date = dt.datetime.now()
 
 btc = yf.Ticker("BTC-USD")
-data = btc.history(interval="1h", start=start_date, end=end_date)
+data = btc.history(interval="1d", start=start_date, end=end_date)
 
 df = pd.DataFrame(data)
 df = df[
@@ -28,7 +28,8 @@ df = df[
 df["atr"] = ta.atr(df["High"], df["Low"], df["Close"], length=1)
 df["atr"] = df.atr.rolling(window=30).mean()
 
-df["close_smooth"] = savgol_filter(df["Close"], 49, 5)
+df["close_smooth"] = savgol_filter(df["Close"], 15, 5)
+# (49, 2) official from video
 
 
 fig = go.Figure(
