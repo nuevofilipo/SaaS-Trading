@@ -19,13 +19,13 @@ from binance.spot import Spot as Client
 
 
 app = dash.Dash()  # creating the dash app
-
+limit = 365
 
 # connecting binance data
 base_url = "https://api.binance.com"
 spot_client = Client(base_url=base_url)
 
-btcusd_historical = spot_client.klines("BTCUSDT", "1d", limit=365)
+btcusd_historical = spot_client.klines("BTCUSDT", "1d", limit=limit)
 # print(btcusd_historical)
 
 columns = [
@@ -45,6 +45,7 @@ columns = [
 df = pd.DataFrame(btcusd_historical, columns=columns)
 df["time"] = pd.to_datetime(df["Open time"], unit="ms")
 df = df[["time", "Open", "High", "Low", "Close", "Volume"]]
+
 # print(uf)
 
 
@@ -89,7 +90,7 @@ app.layout = html.Div(
 )
 def update_chart(n, n_clicks_1, n_clicks_2):
     if n_clicks_2 is not None and n_clicks_2 % 2 == 1:
-        btcusd_historical = spot_client.klines("BTCUSDT", "1d", limit=365)
+        btcusd_historical = spot_client.klines("BTCUSDT", "1d", limit=limit)
         columns = [
             "Open time",
             "Open",
@@ -273,9 +274,6 @@ def update_chart(n, n_clicks_1, n_clicks_2):
         fig.update_layout(
             xaxis=dict(
                 range=[df.index[-50], df.index[-1]],
-            ),
-            yaxis=dict(
-                range=[min_value * 0.9, max_value * 1.1],
             ),
         )
 
