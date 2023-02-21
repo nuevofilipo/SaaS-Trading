@@ -3,33 +3,44 @@ import pandas as pd
 import datetime as dt
 import yfinance as yf
 
+# importing from binance
+from binance.spot import Spot as Client
+
 # import talib as ta
 import pandas_ta as ta
 from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
 
+# connecting binance data
+# connecting binance data
+base_url = "https://api.binance.com"
+spot_client = Client(base_url=base_url)
 
-start_date = "2021-01-01"
-end_date = dt.datetime.now()
+btcusd_historical = spot_client.klines("BTCUSDT", "1d", limit=365)
+# print(btcusd_historical)
 
-btc = yf.Ticker("BTC-USD")
-data = btc.history(interval="1d", start=start_date, end=end_date)
-
-df = pd.DataFrame(data)
-df = df[
-    [
-        "Open",
-        "High",
-        "Low",
-        "Close",
-    ]
+columns = [
+    "Open time",
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume",
+    "Close time",
+    "quote_asset_volume",
+    "number_of_trades",
+    "taker_buy_base_asset_volume",
+    "taker_buy_quote_asset_volume",
+    "ignore",
 ]
+df = pd.DataFrame(btcusd_historical, columns=columns)
+df["time"] = pd.to_datetime(df["Open time"], unit="ms")
+df = df[["time", "Open", "High", "Low", "Close", "Volume"]]
+# print(uf)
 
-df["atr"] = ta.atr(df["High"], df["Low"], df["Close"], length=1)
-df["atr"] = df.atr.rolling(window=30).mean()
-
-df["close_smooth"] = savgol_filter(df["Close"], 15, 5)
-# (49, 2) official from video
+date_range = df.loc[df.index[-200] : df.index[-1]]
+max_value = round(float(date_range["High"].max()))
+min_value = round(float(date_range["Low"].min()))
 
 
 fig = go.Figure(
@@ -44,33 +55,6 @@ fig = go.Figure(
     ]
 )
 
-smoothing = go.Scatter(x=df.index, y=df["close_smooth"], mode="lines", name="Smoothed")
-fig.add_trace(smoothing)
-
-atr = df["atr"].iloc[-1]
-
-peaks_idx, _ = find_peaks(df["close_smooth"], distance=15, width=3, prominence=atr)
-troughs_idx, _ = find_peaks(-df["close_smooth"], distance=15, width=3, prominence=atr)
-
-
-peaks = go.Scatter(
-    x=df.index[peaks_idx],
-    y=df["close_smooth"][peaks_idx],
-    mode="markers",
-    name="Peaks",
-    marker=dict(color="blue", size=12),
-)
-
-troughs = go.Scatter(
-    x=df.index[troughs_idx],
-    y=df["close_smooth"][troughs_idx],
-    mode="markers",
-    name="Troughs",
-    marker=dict(color="yellow", size=12),
-)
-
-fig.add_trace(peaks)
-fig.add_trace(troughs)
-
+fig.update_layout(yaxis=dict(range=[min_value * 0.9, max_value * 1.1]))
 
 fig.show()

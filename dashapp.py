@@ -1,7 +1,6 @@
 import dash
 from dash import dcc
 from dash import html
-import yfinance as yf
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly
@@ -15,27 +14,48 @@ from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
 import pandas_ta as tan
 
+# importing from binance
+from binance.spot import Spot as Client
+
 
 app = dash.Dash()  # creating the dash app
 
-start_date = "2021-01-01"
-end_date = dt.datetime.now()
 
-btc = yf.Ticker("BTC-USD")
-data = btc.history(interval="1d", start=start_date, end=end_date)
+# connecting binance data
+base_url = "https://api.binance.com"
+spot_client = Client(base_url=base_url)
 
+btcusd_historical = spot_client.klines("BTCUSDT", "1d", limit=365)
+# print(btcusd_historical)
 
+columns = [
+    "Open time",
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume",
+    "Close time",
+    "quote_asset_volume",
+    "number_of_trades",
+    "taker_buy_base_asset_volume",
+    "taker_buy_quote_asset_volume",
+    "ignore",
+]
+df = pd.DataFrame(btcusd_historical, columns=columns)
+df["time"] = pd.to_datetime(df["Open time"], unit="ms")
+df = df[["time", "Open", "High", "Low", "Close", "Volume"]]
 # print(uf)
 
 
 fig = go.Figure(
     data=[
         go.Candlestick(
-            x=data.index,
-            open=data["Open"],
-            high=data["High"],
-            low=data["Low"],
-            close=data["Close"],
+            x=df.index,
+            open=df["Open"],
+            high=df["High"],
+            low=df["Low"],
+            close=df["Close"],
         )
     ]
 )
@@ -50,7 +70,9 @@ app.layout = html.Div(
             id="candlestick-chart",
             figure=fig,
             style={"height": "100vh", "width": "100vw"},
-            config=dict({"scrollZoom": True}),
+            config=dict(
+                {"scrollZoom": True, "displayModeBar": False},
+            ),
         ),
         dcc.Interval(
             id="interval-component", interval=10000, n_intervals=0  # in milliseconds
@@ -66,19 +88,46 @@ app.layout = html.Div(
     [dash.dependencies.Input("daily-weekly-btn", "n_clicks")],
 )
 def update_chart(n, n_clicks_1, n_clicks_2):
-    end_date = dt.datetime.now()
-    btc = yf.Ticker("BTC-USD")
-
     if n_clicks_2 is not None and n_clicks_2 % 2 == 1:
-        data_daily = btc.history(interval="1d", start=start_date, end=end_date)
-        data = data_daily
-        df = pd.DataFrame(data)
+        btcusd_historical = spot_client.klines("BTCUSDT", "1d", limit=365)
+        columns = [
+            "Open time",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Close time",
+            "quote_asset_volume",
+            "number_of_trades",
+            "taker_buy_base_asset_volume",
+            "taker_buy_quote_asset_volume",
+            "ignore",
+        ]
+        df = pd.DataFrame(btcusd_historical, columns=columns)
+        df["time"] = pd.to_datetime(df["Open time"], unit="ms")
+        df = df[["time", "Open", "High", "Low", "Close", "Volume"]]
         df["MA"] = ta.SMA(df["Close"], timeperiod=63)
         df["EMA"] = ta.EMA(df["Close"], timeperiod=84)
     else:
-        data_weekly = btc.history(interval="1wk", start=start_date, end=end_date)
-        data = data_weekly
-        df = pd.DataFrame(data)
+        btcusd_historical = spot_client.klines("BTCUSDT", "1w", limit=100)
+        columns = [
+            "Open time",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Close time",
+            "quote_asset_volume",
+            "number_of_trades",
+            "taker_buy_base_asset_volume",
+            "taker_buy_quote_asset_volume",
+            "ignore",
+        ]
+        df = pd.DataFrame(btcusd_historical, columns=columns)
+        df["time"] = pd.to_datetime(df["Open time"], unit="ms")
+        df = df[["time", "Open", "High", "Low", "Close", "Volume"]]
         df["MA"] = ta.SMA(df["Close"], timeperiod=9)
         df["EMA"] = ta.EMA(df["Close"], timeperiod=12)
 
@@ -89,11 +138,11 @@ def update_chart(n, n_clicks_1, n_clicks_2):
     fig = go.Figure(
         data=[
             go.Candlestick(
-                x=data.index,
-                open=data["Open"],
-                high=data["High"],
-                low=data["Low"],
-                close=data["Close"],
+                x=df.index,
+                open=df["Open"],
+                high=df["High"],
+                low=df["Low"],
+                close=df["Close"],
                 name="Bitcoin Price (USD)",
                 increasing_line_color="#03fc94",
                 decreasing_line_color="#fc032d",
@@ -171,8 +220,8 @@ def update_chart(n, n_clicks_1, n_clicks_2):
     fig.add_trace(ema2)
 
     date_range = df.loc[df.index[-50] : df.index[-1]]
-    max_value = date_range["High"].max()
-    min_value = date_range["Low"].min()
+    max_value = round(float(date_range["High"].max()))
+    min_value = round(float(date_range["Low"].min()))
 
     fig.update_layout(
         title="Bitcoin Price (USD)",
@@ -199,7 +248,6 @@ def update_chart(n, n_clicks_1, n_clicks_2):
             spikecolor="#999999",
             spikemode="across",
             showgrid=False,
-            range=[df.index[-50], df.index[-1]],
             # fixedrange=True,
             rangeslider=dict(visible=False),
             # type="log",
@@ -215,6 +263,22 @@ def update_chart(n, n_clicks_1, n_clicks_2):
         margin=dict(l=100, r=100, t=100, b=100),
     )
 
+    if n_clicks_2 is not None and n_clicks_2 % 2 == 1:
+        fig.update_layout(
+            xaxis=dict(
+                range=[df.index[-50], df.index[-1]],
+            )
+        )
+    else:
+        fig.update_layout(
+            xaxis=dict(
+                range=[df.index[-50], df.index[-1]],
+            ),
+            yaxis=dict(
+                range=[min_value * 0.9, max_value * 1.1],
+            ),
+        )
+
     if n_clicks_1 is not None and n_clicks_1 % 2 == 1:
         fig.update_layout(
             plot_bgcolor="#000000",
@@ -226,9 +290,6 @@ def update_chart(n, n_clicks_1, n_clicks_2):
             plot_bgcolor="#ffffff",
             paper_bgcolor="#ffffff",
             title_font_color="#000000",
-            yaxis=dict(
-                # type="linear",
-            ),
         )
 
     fig["layout"]["uirevision"] = "something"
@@ -236,4 +297,6 @@ def update_chart(n, n_clicks_1, n_clicks_2):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(
+        debug=False
+    )  # if you want to activate debug mode, set it to True, this also adds the blue button
