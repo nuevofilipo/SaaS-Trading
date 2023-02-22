@@ -16,3 +16,15 @@
     background-color: palegoldenrod;
     color: black;
 }
+
+.drop-down {
+    color: black;
+    /* border-color: black; */
+    height: 50px;
+    width: 200px;
+    border-radius: 10px;
+    font-size: 20px;
+    border: none;
+    font-family: "Century Gothic", sans-serif;
+    margin-right: 20px;
+}

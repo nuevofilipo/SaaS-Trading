@@ -11,52 +11,63 @@ import pandas_ta as ta
 from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
 
+import dash
+from dash import dcc
+from dash import html
+from dash.dependencies import Input, Output
+
 # connecting binance data
 # connecting binance data
-base_url = "https://api.binance.com"
-spot_client = Client(base_url=base_url)
-
-btcusd_historical = spot_client.klines("BTCUSDT", "1w", limit=280)
-# print(btcusd_historical)
-
-columns = [
-    "Open time",
-    "Open",
-    "High",
-    "Low",
-    "Close",
-    "Volume",
-    "Close time",
-    "quote_asset_volume",
-    "number_of_trades",
-    "taker_buy_base_asset_volume",
-    "taker_buy_quote_asset_volume",
-    "ignore",
-]
 
 
-df = pd.DataFrame(btcusd_historical, columns=columns)
-df["time"] = pd.to_datetime(df["Open time"], unit="ms")
-df = df[["time", "Open", "High", "Low", "Close", "Volume"]]
-df[["Open", "High", "Low", "Close", "Volume"]] = df[
-    ["Open", "High", "Low", "Close", "Volume"]
-].astype(float)
-print(df)
+app = dash.Dash()  # creating the dash app
 
 
-# date_range = df.loc[df.index[-149] : df.index[-1]]
-
-date_range = df.iloc[-200:]
-min_value = round(float(date_range["Close"].min()))
-max_value = round(float(date_range["Close"].max()))
+# Getting the Data, and plotting chart-----------------------------------------
 
 
-print(date_range["Close"])
-print(min_value, max_value)
-print(date_range["Close"].max())
+def gettingData(coin):
+    base_url = "https://api.binance.com"
+    spot_client = Client(base_url=base_url)
 
-df.set_index("time", inplace=True)
+    limit = 200
+    btcusd_historical = spot_client.klines(coin, "1d", limit=limit)
 
+    columns = [
+        "Open time",
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+        "Close time",
+        "quote_asset_volume",
+        "number_of_trades",
+        "taker_buy_base_asset_volume",
+        "taker_buy_quote_asset_volume",
+        "ignore",
+    ]
+
+    df = pd.DataFrame(btcusd_historical, columns=columns)
+    df["time"] = pd.to_datetime(df["Open time"], unit="ms")
+    df = df[["time", "Open", "High", "Low", "Close", "Volume"]]
+    df[["Open", "High", "Low", "Close", "Volume"]] = (
+        df[["Open", "High", "Low", "Close", "Volume"]].astype(float).astype(int)
+    )
+
+    # print(df)
+
+    # date_range = df.loc[df.index[-149] : df.index[-1]]
+
+    date_range = df.iloc[-200:]
+    min_value = round(float(date_range["Close"].min()))
+    max_value = round(float(date_range["Close"].max()))
+
+    df.set_index("time", inplace=True)
+    return df
+
+
+df = gettingData("BTCUSDT")
 
 fig = go.Figure(
     data=[
@@ -66,16 +77,65 @@ fig = go.Figure(
             high=df["High"],
             low=df["Low"],
             close=df["Close"],
+            increasing_line_color="black",
+            decreasing_line_color="red",
+            increasing_fillcolor="black",
+            decreasing_fillcolor="red",
         )
     ]
 )
 
-fig.update_layout(
-    yaxis=dict(range=[min_value * 0.9, max_value * 1.1]),
-    xaxis=dict(
-        range=[df.index[-200], df.index[-1]],
-    ),
+# ------------------------------------------------------------
+
+options = ["BTCUSDT", "ETHUSDT"]
+
+app.layout = html.Div(
+    [
+        dcc.Dropdown(
+            className="drop-down",
+            options=options,
+            value="BTCUSDT",
+            id="crypto_select",
+            clearable=False,
+        ),
+        # html.H1("Candlestick Chart"),
+        dcc.Graph(
+            id="candlestick-chart",
+            figure=fig,
+            style={"height": "100vh", "width": "100vw"},
+            config=dict(
+                {"scrollZoom": True, "displayModeBar": False},
+            ),
+        ),
+    ]
 )
 
 
-fig.show()
+@app.callback(
+    Output("candlestick-chart", "figure"),
+    Input(component_id="crypto_select", component_property="value"),
+)
+def update_chart(value):
+    df = gettingData(value)
+
+    fig = go.Figure(
+        data=[
+            go.Candlestick(
+                x=df.index,
+                open=df["Open"],
+                high=df["High"],
+                low=df["Low"],
+                close=df["Close"],
+                increasing_line_color="black",
+                decreasing_line_color="red",
+                increasing_fillcolor="black",
+                decreasing_fillcolor="red",
+            )
+        ]
+    )
+
+    return fig
+
+
+if __name__ == "__main__":
+    app.run_server(debug=True)
