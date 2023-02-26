@@ -26,12 +26,12 @@ app = dash.Dash()  # creating the dash app
 # Getting the Data, and plotting chart-----------------------------------------
 
 
-def gettingData(coin):
+def gettingData(coin, candleTimeFrame):
     base_url = "https://api.binance.com"
     spot_client = Client(base_url=base_url)
 
     limit = 200
-    btcusd_historical = spot_client.klines(coin, "1d", limit=limit)
+    btcusd_historical = spot_client.klines(coin, candleTimeFrame, limit=limit)
 
     columns = [
         "Open time",
@@ -67,7 +67,7 @@ def gettingData(coin):
     return df
 
 
-df = gettingData("BTCUSDT")
+df = gettingData("BTCUSDT", "1d")
 
 fig = go.Figure(
     data=[
@@ -116,7 +116,7 @@ app.layout = html.Div(
     Input(component_id="crypto_select", component_property="value"),
 )
 def update_chart(value):
-    df = gettingData(value)
+    df = gettingData(value, "1d")
 
     fig = go.Figure(
         data=[
@@ -126,9 +126,9 @@ def update_chart(value):
                 high=df["High"],
                 low=df["Low"],
                 close=df["Close"],
-                increasing_line_color="black",
+                increasing_line_color="green",
                 decreasing_line_color="red",
-                increasing_fillcolor="black",
+                increasing_fillcolor="green",
                 decreasing_fillcolor="red",
             )
         ]

@@ -73,18 +73,36 @@ fig = go.Figure(
     ]
 )
 # ctrl f2 for renaming all variables at once
-options = ["BTCUSDT", "ETHUSDT"]
+options = [
+    "BTCUSDT",
+    "ETHUSDT",
+    "BNBUSDT",
+]
 
 app.layout = html.Div(
     [
-        html.Button("Toggle Dark Mode", className="toggle-button", id="dark-mode-btn"),
-        html.Button("daily/weekly", className="toggle-button", id="daily-weekly-btn"),
-        dcc.Dropdown(
-            className="drop-down",
-            options=options,
-            value="BTCUSDT",
-            id="crypto_select",
-            clearable=False,
+        html.Div(
+            [
+                html.Button(
+                    "Toggle Dark Mode", className="toggle-button", id="dark-mode-btn"
+                ),
+                html.Button(
+                    "daily/weekly", className="toggle-button", id="daily-weekly-btn"
+                ),
+                dcc.Dropdown(
+                    className="drop-down",
+                    options=options,
+                    value="BTCUSDT",
+                    id="crypto_select",
+                    clearable=False,
+                ),
+            ],
+            style={
+                "display": "flex",
+                "align-items": "center",
+                "justify-content": "center",
+            },
+            className="header",
         ),
         dcc.Graph(
             id="candlestick-chart",
@@ -104,9 +122,9 @@ app.layout = html.Div(
 @app.callback(
     Output("candlestick-chart", "figure"),
     [Input("interval-component", "n_intervals")],
-    Input(component_id="crypto_select", component_property="value"),
     [dash.dependencies.Input("dark-mode-btn", "n_clicks")],
     [dash.dependencies.Input("daily-weekly-btn", "n_clicks")],
+    Input(component_id="crypto_select", component_property="value"),
 )
 def update_chart(n, n_clicks_1, n_clicks_2, value):
     if n_clicks_2 is not None and n_clicks_2 % 2 == 1:
@@ -213,9 +231,11 @@ def update_chart(n, n_clicks_1, n_clicks_2, value):
     min_value = round(float(date_range["Low"].min()))
 
     fig.update_layout(
-        title="Bitcoin Price (USD)",
-        title_font=dict(family="Century Gothic", size=18, color="#ffffff"),
-        font=dict(family="Century Gothic", size=15, color="#ffffff"),
+        title=value + " Chart",
+    )
+    fig.update_layout(
+        title_font=dict(family="Figtree", size=18, color="#ffffff"),
+        font=dict(family="Figtree", size=15, color="#ffffff"),
         # height=900,
         # width=1800,
         # plot_bgcolor="#000000",
@@ -251,7 +271,7 @@ def update_chart(n, n_clicks_1, n_clicks_2, value):
             # type="log",
             zeroline=False,
         ),
-        margin=dict(l=100, r=100, t=100, b=100),
+        margin=dict(l=5, r=10, t=100, b=100),
     )
 
     if n_clicks_2 is not None and n_clicks_2 % 2 == 1:
@@ -286,7 +306,7 @@ def update_chart(n, n_clicks_1, n_clicks_2, value):
 
 if __name__ == "__main__":
     app.run_server(
-        debug=False
+        debug=True
     )  # if you want to activate debug mode, set it to True, this also adds the blue button
 
 # If the browser always loads the same chart, you have to clear the cache of your browser.
